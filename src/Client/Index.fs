@@ -14,7 +14,8 @@ type Model =
       WrongAnswers: Set<char>
       GuessedLetters: Set<char>
       CorrectAnswers: char option array
-      WaitingForResult: bool }
+      WaitingForResult: bool
+      CorrectWord: string option }
 
 type Msg =
     | MakeGuess of char
@@ -22,6 +23,7 @@ type Msg =
     | GuessProcessed of GuessResult
     | WordLengthChanged of int
     | MaxGuessesChanged of int
+    | SetCorrectWord of string
 
 let hangmanApi =
     Remoting.createApi ()
@@ -34,7 +36,19 @@ let createModel wordLength maxGuesses =
       WrongAnswers = Set.empty
       GuessedLetters = Set.empty
       CorrectAnswers = Array.replicate wordLength None
-      WaitingForResult = false }
+      WaitingForResult = false
+      CorrectWord = None }
+
+let createGuessData letter model =
+    let correct =
+        model.CorrectAnswers
+        |> Array.mapi (fun i opt -> opt |> Option.map (fun x -> i, x))
+        |> Array.choose id
+
+    { WordLength = model.WordLength
+      WrongAnswers = model.WrongAnswers |> Set.toList
+      CorrectAnswers = correct
+      CurrentGuess = letter }
 
 let init () : Model * Cmd<Msg> =
     createModel 10 10, Cmd.none
@@ -44,6 +58,9 @@ let update (msg: Msg) (model: Model) : Model * Cmd<Msg> =
     | NewGame ->
         init ()
 
+    | SetCorrectWord word ->
+        { model with CorrectWord = Some word }, Cmd.none
+
     | WordLengthChanged wordLength ->
         createModel wordLength model.MaxGuesses, Cmd.none
 
@@ -51,16 +68,7 @@ let update (msg: Msg) (model: Model) : Model * Cmd<Msg> =
         { model with MaxGuesses = maxGuesses }, Cmd.none
 
     | MakeGuess letter ->
-        let correct =
-            model.CorrectAnswers
-            |> Array.mapi (fun i opt -> opt |> Option.map (fun x -> i, x))
-            |> Array.choose id
-
-        let guessData =
-            { WordLength = model.WordLength
-              WrongAnswers = model.WrongAnswers |> Set.toList
-              CorrectAnswers = correct
-              CurrentGuess = letter }
+        let guessData = createGuessData letter model
 
         let cmd =
             Cmd.OfAsync.perform hangmanApi.makeGuess guessData GuessProcessed
@@ -70,23 +78,30 @@ let update (msg: Msg) (model: Model) : Model * Cmd<Msg> =
             WaitingForResult = true }, cmd
 
     | GuessProcessed result ->
-        match result with
-        | WrongAnswer letter ->
-            { model with
-                WrongAnswers = model.WrongAnswers.Add(letter)
-                WaitingForResult = false }, Cmd.none
-        | CorrectAnswer (letter, indexes) ->
-            let correct =
-                model.CorrectAnswers
-                |> Array.mapi (fun i x ->
-                    if List.contains i indexes then
-                        Some letter
-                    else
-                        x)
+        let model =
+            match result with
+            | WrongAnswer letter ->
+                { model with WrongAnswers = model.WrongAnswers.Add(letter) }
+            | CorrectAnswer (letter, indexes) ->
+                let correctAnswers =
+                    model.CorrectAnswers
+                    |> Array.mapi (fun i x ->
+                        if List.contains i indexes then
+                            Some letter
+                        else
+                            x)
 
-            { model with
-                CorrectAnswers = correct
-                WaitingForResult = false }, Cmd.none
+                { model with CorrectAnswers = correctAnswers }
+
+        let cmd =
+            if model.GuessedLetters.Count = model.MaxGuesses then
+                let guessData = createGuessData 'x' model
+
+                Cmd.OfAsync.perform hangmanApi.getCorrectWord guessData SetCorrectWord
+            else
+                Cmd.none
+
+        { model with WaitingForResult = false }, cmd
 
 let containerBox (model: Model) (dispatch: Msg -> unit) =
     let guesses = model.GuessedLetters.Count
@@ -175,6 +190,13 @@ let containerBox (model: Model) (dispatch: Msg -> unit) =
                 prop.style [ style.color color.black ]
                 prop.text "YOU LOSE!"
             ]
+            match model.CorrectWord with
+            | Some correctWord ->
+                Html.div [
+                    prop.text $"I was thinking of the word '{correctWord}'"
+                ]
+            | None ->
+                ()
     ]
 
 let view (model: Model) (dispatch: Msg -> unit) =

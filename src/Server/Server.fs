@@ -65,19 +65,20 @@ let mostFreqPatternByLetter wordList letter =
     let wordsWithTheLetter = removeWordsWithoutLetter letter wordList
     findMaxPattern wordsWithTheLetter [] 0
 
-let makeGuess (guessData: GuessData) =
-    let wordList =
-        wordLists.[guessData.WordLength]
-        |> List.filter (fun word ->
-            guessData.WrongAnswers
-            |> List.forall (word.Contains >> not)
-            &&
-            guessData.CorrectAnswers
-            |> Array.groupBy snd
-            |> Array.forall (fun (letter, group) ->
-                let pattern = group |> Array.map fst |> Array.toList
-                matchesPattern word letter pattern))
+let prepareWordList guessData =
+    wordLists.[guessData.WordLength]
+    |> List.filter (fun word ->
+        guessData.WrongAnswers
+        |> List.forall (word.Contains >> not)
+        &&
+        guessData.CorrectAnswers
+        |> Array.groupBy snd
+        |> Array.forall (fun (letter, group) ->
+            let pattern = group |> Array.map fst |> Array.toList
+            matchesPattern word letter pattern))
 
+let makeGuess (guessData: GuessData) =
+    let wordList = prepareWordList guessData
     let missingCount = countWordsWithoutLetter wordList guessData.CurrentGuess
     let nextPattern, nextPatternCount = mostFreqPatternByLetter wordList guessData.CurrentGuess
 
@@ -86,8 +87,13 @@ let makeGuess (guessData: GuessData) =
     else
         CorrectAnswer(guessData.CurrentGuess, nextPattern)
 
+let getCorrectWord guessData =
+    prepareWordList guessData
+    |> List.head
+
 let hangmanApi =
-    { makeGuess = fun data -> async { return makeGuess data } }
+    { makeGuess = fun data -> async { return makeGuess data }
+      getCorrectWord = fun data -> async { return getCorrectWord data } }
 
 let webApp =
     Remoting.createApi ()

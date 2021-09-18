@@ -15,4 +15,5 @@ module Route =
         sprintf "/api/%s/%s" typeName methodName
 
 type IHangManApi =
-    { makeGuess: GuessData -> Async<GuessResult> }
+    { makeGuess: GuessData -> Async<GuessResult>
+      getCorrectWord: GuessData -> Async<string> }
