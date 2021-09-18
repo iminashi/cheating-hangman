@@ -56,7 +56,7 @@ let init () : Model * Cmd<Msg> =
 let update (msg: Msg) (model: Model) : Model * Cmd<Msg> =
     match msg with
     | NewGame ->
-        init ()
+        createModel model.WordLength model.MaxGuesses, Cmd.none
 
     | SetCorrectWord word ->
         { model with CorrectWord = Some word }, Cmd.none
@@ -109,44 +109,85 @@ let containerBox (model: Model) (dispatch: Msg -> unit) =
     let isGameOver = (guesses >= model.MaxGuesses || gameWon) && not model.WaitingForResult
 
     Bulma.box [
-        Bulma.field.div [
-            field.isGrouped
-            prop.children [
-                Html.div [
-                    prop.text "Max Guesses"
+        Bulma.columns [
+            Bulma.column [
+                column.isOneQuarter
+                prop.children [
+                    Bulma.button.a [
+                        button.isOutlined
+                        button.isFullWidth
+                        color.isInfo
+                        prop.onClick (fun _ -> dispatch NewGame)
+                        prop.children [
+                            Bulma.icon [
+                                Html.i [
+                                    prop.classes [ "fa"; "fa-sync-alt" ]
+                                ]
+                            ]
+                            Html.span [ prop.text "New Game" ]
+                        ]
+                    ]
                 ]
-                Bulma.input.number [
-                    prop.value model.MaxGuesses
-                    prop.max 26
-                    prop.min 5
-                    prop.onInput (fun e -> (e.currentTarget :?> HTMLInputElement).value |> int |> MaxGuessesChanged |> dispatch)
+            ]
+            Bulma.column [
+                Bulma.field.div [
+                    field.isHorizontal
+                    prop.children [
+                        Bulma.fieldLabel [
+                            prop.text "Max Guesses"
+                        ]
+                        Bulma.fieldBody [
+                            Bulma.input.number [
+                                prop.title "The number of guesses allowed."
+                                prop.value model.MaxGuesses
+                                prop.max 26
+                                prop.min 5
+                                prop.onInput (fun e -> (e.currentTarget :?> HTMLInputElement).value |> int |> MaxGuessesChanged |> dispatch)
+                            ]
+                        ]
+                    ]
+                ]
+            ]
+
+            Bulma.column [
+                Bulma.field.div [
+                    field.isHorizontal
+                    prop.children [
+                        Bulma.fieldLabel [
+                            prop.text "Word Length"
+                        ]
+                        Bulma.fieldBody [
+                            Bulma.input.number [
+                                prop.title "The length of the word to guess."
+                                prop.value model.WordLength
+                                prop.max 22
+                                prop.min 2
+                                prop.onInput (fun e -> (e.currentTarget :?> HTMLInputElement).value |> int |> WordLengthChanged |> dispatch)
+                            ]
+                        ]
+                    ]
                 ]
             ]
         ]
 
-        Bulma.field.div [
-            field.isGrouped
-            prop.children [
-                Html.div [
-                    prop.text "Word Length"
-                ]
-                Bulma.input.number [
-                    prop.value model.WordLength
-                    prop.max 22
-                    prop.min 2
-                    prop.onInput (fun e -> (e.currentTarget :?> HTMLInputElement).value |> int |> WordLengthChanged |> dispatch)
-                ]
-            ]
-        ]
-
-        Bulma.field.div [
+        Bulma.columns [
+            columns.isMobile
+            columns.isMultiline
+            columns.isGapless
+            columns.isCentered
             prop.children [
                 for a in model.CorrectAnswers do
-                    Bulma.button.span [
-                        prop.style [ style.fontSize 18 ]
-                        prop.text (a |> Option.defaultValue '_' |> string)
-                        text.isUppercase
-                        if model.WaitingForResult && a.IsNone then button.isLoading
+                    Bulma.column [
+                        column.isNarrow
+                        prop.children [
+                            Bulma.button.a [
+                                prop.style [ style.fontSize 18; style.width 40 ]
+                                prop.text (a |> Option.defaultValue '_' |> string)
+                                text.isUppercase
+                                button.isStatic
+                                if model.WaitingForResult && a.IsNone then button.isLoading
+                            ]
+                        ]
                     ]
             ]
         ]
@@ -154,17 +195,25 @@ let containerBox (model: Model) (dispatch: Msg -> unit) =
         Bulma.columns [
             columns.isMobile
             columns.isMultiline
-            columns.isVariable
-            column.is1
             prop.children (
                 [ 'a' .. 'z' ]
                 |> List.map (fun letter ->
                     let isDisabled = model.GuessedLetters.Contains(letter) || isGameOver
 
                     Bulma.column [
+                        column.isNarrow
                         prop.children [
-                            Bulma.button.span [
-                                if model.WrongAnswers.Contains(letter) then color.isDanger else color.isPrimary
+                            Bulma.button.a [
+                                prop.style [ style.width 50 ]
+                                if isDisabled then
+                                    if model.WrongAnswers.Contains(letter) then
+                                        color.isDanger
+                                    elif model.GuessedLetters.Contains(letter) then
+                                        color.isPrimary
+                                    else
+                                        color.isDark
+                                else
+                                    color.isLink
                                 prop.disabled isDisabled
                                 prop.text (string letter)
                                 text.isUppercase
