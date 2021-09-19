@@ -138,6 +138,7 @@ let containerBox (model: Model) (dispatch: Msg -> unit) =
                         ]
                         Bulma.fieldBody [
                             Bulma.input.number [
+                                prop.disabled isGameOver
                                 prop.title "The number of guesses allowed."
                                 prop.value model.MaxGuesses
                                 prop.max 26
@@ -170,6 +171,25 @@ let containerBox (model: Model) (dispatch: Msg -> unit) =
             ]
         ]
 
+        if gameWon || isGameOver then
+            Bulma.message [
+                if gameWon then color.isSuccess else color.isDanger
+                prop.children [
+                    Bulma.messageHeader [
+                        prop.text (if gameWon then "YOU WIN!" else "YOU LOSE!")
+                    ]
+                    let bodyText =
+                        match model.CorrectWord with
+                        | Some correctWord ->
+                            $"I was thinking of the word '{correctWord}'"
+                        | None when not gameWon ->
+                            "I was thinking of the word ..."
+                        | None ->
+                            "Congratulations..."
+                    Bulma.messageBody bodyText
+                ]
+            ]
+
         Bulma.columns [
             columns.isMobile
             columns.isMultiline
@@ -192,66 +212,41 @@ let containerBox (model: Model) (dispatch: Msg -> unit) =
             ]
         ]
 
-        Bulma.columns [
-            columns.isMobile
-            columns.isMultiline
-            prop.children (
-                [ 'a' .. 'z' ]
-                |> List.map (fun letter ->
-                    let isDisabled = model.GuessedLetters.Contains(letter) || isGameOver
+        Bulma.tag $"{guesses} / {model.MaxGuesses}"
 
-                    Bulma.column [
-                        column.isNarrow
-                        prop.children [
-                            Bulma.button.a [
-                                prop.style [ style.width 50 ]
-                                if isDisabled then
-                                    if model.WrongAnswers.Contains(letter) then
-                                        color.isDanger
-                                    elif model.GuessedLetters.Contains(letter) then
-                                        color.isPrimary
-                                    else
-                                        color.isDark
-                                else
-                                    color.isLink
-                                prop.disabled isDisabled
-                                prop.text (string letter)
-                                text.isUppercase
-                                if not isDisabled && not model.WaitingForResult then prop.onClick (fun _ -> dispatch (MakeGuess letter))
-                            ]
-                        ]
-                    ])
+        Bulma.progress [
+            prop.max model.MaxGuesses
+            prop.value guesses
+        ]
+
+        Bulma.buttons (
+            [ 'a' .. 'z' ]
+            |> List.map (fun letter ->
+                let isDisabled = model.GuessedLetters.Contains(letter) || isGameOver
+
+
+                Bulma.button.a [
+                    prop.style [ style.width 50 ]
+                    match isDisabled with
+                    | true when model.WrongAnswers.Contains(letter) ->
+                        color.isDanger
+                    | true when model.GuessedLetters.Contains(letter) ->
+                        color.isPrimary
+                    | true ->
+                        color.isDark
+                    | false ->
+                        color.isLink
+                    prop.disabled isDisabled
+                    prop.text (string letter)
+                    text.isUppercase
+                    if not isDisabled && not model.WaitingForResult then prop.onClick (fun _ -> dispatch (MakeGuess letter))
+                ])
             )
-        ]
-
-
-        Html.div [
-            prop.text $"Guess {guesses} / {model.MaxGuesses}"
-        ]
-
-        if gameWon then
-            Bulma.title [
-                prop.style [ style.color color.black ]
-                prop.text "YOU WIN!"
-            ]
-        elif isGameOver then
-            Bulma.title [
-                prop.style [ style.color color.black ]
-                prop.text "YOU LOSE!"
-            ]
-            match model.CorrectWord with
-            | Some correctWord ->
-                Html.div [
-                    prop.text $"I was thinking of the word '{correctWord}'"
-                ]
-            | None ->
-                ()
     ]
 
 let view (model: Model) (dispatch: Msg -> unit) =
     Bulma.hero [
         hero.isFullHeight
-        color.isPrimary
         prop.style [
             style.backgroundSize "cover"
             style.backgroundImageUrl "https://unsplash.it/1200/900?random"
@@ -260,16 +255,13 @@ let view (model: Model) (dispatch: Msg -> unit) =
         prop.children [
             Bulma.heroBody [
                 Bulma.container [
-                    Bulma.column [
-                        column.is12
-                        prop.children [
-                            Bulma.title [
-                                text.hasTextCentered
-                                prop.text "Cheating Hangman"
-                            ]
-                            containerBox model dispatch
+                    Bulma.box [
+                        Bulma.title [
+                            text.hasTextCentered
+                            prop.text "Cheating Hangman"
                         ]
                     ]
+                    containerBox model dispatch
                 ]
             ]
         ]
