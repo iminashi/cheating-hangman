@@ -74,7 +74,7 @@ let prepareWordList guessData =
 
     wordLists.[guessData.WordLength]
     |> List.filter (fun word ->
-        guessData.WrongAnswers |> List.forall (word.Contains >> not)
+        guessData.WrongAnswers |> Array.forall (word.Contains >> not)
         && patterns |> Array.forall (matchesPattern word))
 
 let makeGuess (guessData: GuessData) =

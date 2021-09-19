@@ -2,7 +2,7 @@ namespace Shared
 
 type GuessData =
     { WordLength: int
-      WrongAnswers: char list
+      WrongAnswers: char array
       CorrectAnswers: (int * char) array
       CurrentGuess: char }
 

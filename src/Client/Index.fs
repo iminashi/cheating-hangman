@@ -46,7 +46,7 @@ let createGuessData letter model =
         |> Array.choose id
 
     { WordLength = model.WordLength
-      WrongAnswers = model.WrongAnswers |> Set.toList
+      WrongAnswers = model.WrongAnswers |> Set.toArray
       CorrectAnswers = correct
       CurrentGuess = letter }
 
@@ -223,7 +223,6 @@ let containerBox (model: Model) (dispatch: Msg -> unit) =
             [ 'a' .. 'z' ]
             |> List.map (fun letter ->
                 let isDisabled = model.GuessedLetters.Contains(letter) || isGameOver
-
 
                 Bulma.button.a [
                     prop.style [ style.width 50 ]
