@@ -37,7 +37,7 @@ let removeWordsWithoutLetter (requiredLetter: char) =
     List.filter (fun (w: string) -> w.Contains(requiredLetter))
 
 let mostFreqPatternByLetter wordList letter =
-    let rec findMaxPattern wList maxPattern maxPatternCount =
+    let rec findMaxPattern maxPattern maxPatternCount wList =
         match wList with
         | [] ->
             maxPattern, maxPatternCount
@@ -52,12 +52,13 @@ let mostFreqPatternByLetter wordList letter =
             let currentPatternCount = List.length wList - List.length lst
 
             if currentPatternCount > maxPatternCount then
-                findMaxPattern lst currentPattern currentPatternCount
+                findMaxPattern currentPattern currentPatternCount lst
             else
-                findMaxPattern lst maxPattern maxPatternCount
+                findMaxPattern maxPattern maxPatternCount lst
 
-    let wordsWithTheLetter = removeWordsWithoutLetter letter wordList
-    findMaxPattern wordsWithTheLetter Set.empty 0
+    wordList
+    |> removeWordsWithoutLetter letter
+    |> findMaxPattern Set.empty 0
 
 let prepareWordList guessData =
     let patterns =
