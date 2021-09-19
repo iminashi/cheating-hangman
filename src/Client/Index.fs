@@ -94,7 +94,7 @@ let update (msg: Msg) (model: Model) : Model * Cmd<Msg> =
                 { model with CorrectAnswers = correctAnswers }
 
         let cmd =
-            if model.GuessedLetters.Count = model.MaxGuesses then
+            if model.GuessedLetters.Count = model.MaxGuesses && not <| Array.forall Option.isSome model.CorrectAnswers then
                 let guessData = createGuessData 'x' model
 
                 Cmd.OfAsync.perform hangmanApi.getCorrectWord guessData SetCorrectWord
