@@ -1,6 +1,8 @@
 # Cheating Hangman
 
-![Screenshot](./images/screenshot.png)
+[![Screenshot](./images/screenshot.png)](https://cheatinghangman.azurewebsites.net/)
+
+[Try it out](https://cheatinghangman.azurewebsites.net/)
 
 A web implementation using the SAFE stack of the cheating hangman program from the book _Think Like a Programmer: An Introduction to Creative Problem Solving_ by V. Anton Spraul.
 
