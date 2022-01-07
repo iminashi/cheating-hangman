@@ -4,11 +4,14 @@ open System.IO
 
 open Shared
 
-let wordLists =
-    File.ReadAllLines("wordlist.txt")
-    |> List.ofArray
-    |> List.groupBy String.length
-    |> readOnlyDict
+let getWordsWithLength =
+    let wordLists =
+        File.ReadAllLines("wordlist.txt")
+        |> List.ofArray
+        |> List.groupBy String.length
+        |> readOnlyDict
+
+    fun length -> wordLists.[length]
 
 let countWordsWithoutLetter (wordList: string list) (letter: char) =
     wordList
@@ -34,7 +37,7 @@ let matchesPattern word (letter, pattern) =
     testPos 0
 
 let removeWordsWithoutLetter (requiredLetter: char) =
-    List.filter (fun (w: string) -> w.Contains(requiredLetter))
+    List.filter (String.contains requiredLetter)
 
 let mostFreqPatternByLetter wordList letter =
     let rec findMaxPattern maxPattern maxPatternCount wList =
@@ -72,7 +75,7 @@ let prepareWordList guessData =
 
             letter, pattern)
 
-    wordLists.[guessData.WordLength]
+    getWordsWithLength guessData.WordLength
     |> List.filter (fun word ->
         guessData.WrongAnswers |> Array.forall (word.Contains >> not)
         && patterns |> Array.forall (matchesPattern word))

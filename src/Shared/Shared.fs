@@ -17,3 +17,6 @@ module Route =
 type IHangManApi =
     { makeGuess: GuessData -> Async<GuessResult>
       getCorrectWord: GuessData -> Async<string> }
+
+module String =
+    let contains (ch: char) (str: string) = str.Contains(ch)
