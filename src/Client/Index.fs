@@ -50,6 +50,13 @@ let createGuessData letter model =
       CorrectAnswers = correct
       CurrentGuess = letter }
 
+let isGameWon model =
+    model.CorrectAnswers |> Array.forall Option.isSome
+
+let isGameLost model =
+    model.GuessedLetters.Count = model.MaxGuesses &&
+    not <| isGameWon model
+
 let init () : Model * Cmd<Msg> =
     createModel 10 10, Cmd.none
 
@@ -94,7 +101,8 @@ let update (msg: Msg) (model: Model) : Model * Cmd<Msg> =
                 { model with CorrectAnswers = correctAnswers }
 
         let cmd =
-            if model.GuessedLetters.Count = model.MaxGuesses && not <| Array.forall Option.isSome model.CorrectAnswers then
+            // Get the "correct" word if the player lost
+            if isGameLost model then
                 let guessData = createGuessData 'x' model
 
                 Cmd.OfAsync.perform hangmanApi.getCorrectWord guessData SetCorrectWord
@@ -105,7 +113,7 @@ let update (msg: Msg) (model: Model) : Model * Cmd<Msg> =
 
 let containerBox (model: Model) (dispatch: Msg -> unit) =
     let guesses = model.GuessedLetters.Count
-    let gameWon = model.CorrectAnswers |> Array.forall Option.isSome
+    let gameWon = isGameWon model
     let isGameOver = (guesses >= model.MaxGuesses || gameWon) && not model.WaitingForResult
 
     Bulma.box [
@@ -143,7 +151,11 @@ let containerBox (model: Model) (dispatch: Msg -> unit) =
                                 prop.value model.MaxGuesses
                                 prop.max 26
                                 prop.min 5
-                                prop.onInput (fun e -> (e.currentTarget :?> HTMLInputElement).value |> int |> MaxGuessesChanged |> dispatch)
+                                prop.onInput (fun e ->
+                                    (e.currentTarget :?> HTMLInputElement).value
+                                    |> int
+                                    |> MaxGuessesChanged
+                                    |> dispatch)
                             ]
                         ]
                     ]
@@ -163,7 +175,11 @@ let containerBox (model: Model) (dispatch: Msg -> unit) =
                                 prop.value model.WordLength
                                 prop.max 22
                                 prop.min 2
-                                prop.onInput (fun e -> (e.currentTarget :?> HTMLInputElement).value |> int |> WordLengthChanged |> dispatch)
+                                prop.onInput (fun e ->
+                                    (e.currentTarget :?> HTMLInputElement).value
+                                    |> int
+                                    |> WordLengthChanged
+                                    |> dispatch)
                             ]
                         ]
                     ]
@@ -238,7 +254,8 @@ let containerBox (model: Model) (dispatch: Msg -> unit) =
                     prop.disabled isDisabled
                     prop.text (string letter)
                     text.isUppercase
-                    if not isDisabled && not model.WaitingForResult then prop.onClick (fun _ -> dispatch (MakeGuess letter))
+                    if not isDisabled && not model.WaitingForResult then
+                        prop.onClick (fun _ -> dispatch (MakeGuess letter))
                 ])
             )
     ]
