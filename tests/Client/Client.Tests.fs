@@ -6,14 +6,21 @@ open Index
 open Shared
 
 let client = testList "Client" [
-    testCase "Added todo" <| fun _ ->
-        let newTodo = Todo.create "new todo"
+    testCase "Guess was wrong" <| fun _ ->
+        let result = WrongAnswer('a')
         let model, _ = init ()
 
-        let model, _ = update (AddedTodo newTodo) model
+        let model, _ = update (GuessProcessed result) model
 
-        Expect.equal 1 model.Todos.Length "There should be 1 todo"
-        Expect.equal newTodo model.Todos.[0] "Todo should equal new todo"
+        Expect.equal model.WrongAnswers.Count 1 "There should be 1 wrong answer"
+
+    testCase "Guess was correct" <| fun _ ->
+        let result = CorrectAnswer('a', [ 0 ])
+        let model, _ = init ()
+
+        let model, _ = update (GuessProcessed result) model
+
+        Expect.equal model.CorrectAnswers.[0] (Some 'a') "Correct answer at index 0 is a"
 ]
 
 let all =

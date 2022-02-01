@@ -9,8 +9,11 @@ open Expecto
 open Shared
 
 let shared = testList "Shared" [
-    testCase "Empty string is not a valid description" <| fun _ ->
-        let expected = false
-        let actual = Todo.isValid ""
-        Expect.equal actual expected "Should be false"
+    testCase "String contains returns true for character in string" <| fun _ ->
+        let actual = String.contains 'o' "word"
+        Expect.equal actual true "Should be true"
+
+    testCase "String contains returns false for character not in string" <| fun _ ->
+        let actual = String.contains 'W' "word"
+        Expect.equal actual false "Should be false"
 ]
