@@ -1,5 +1,6 @@
 module Hangman
 
+open System
 open System.IO
 
 open Shared
@@ -7,7 +8,8 @@ open Shared
 /// Returns a list of words that all have the given length.
 let getWordsWithLength =
     let wordLists =
-        File.ReadAllLines("wordlist.txt")
+        Path.Combine(AppContext.BaseDirectory, "wordlist.txt")
+        |> File.ReadAllLines
         |> List.ofArray
         |> List.groupBy String.length
         |> readOnlyDict
